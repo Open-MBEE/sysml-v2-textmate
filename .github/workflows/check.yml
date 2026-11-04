@@ -1,0 +1,28 @@
+name: check
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  grammars:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate the grammars
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          expected = {"sysml": "source.sysml", "kerml": "source.kerml"}
+          bad = False
+          for name, scope in expected.items():
+              path = f"syntaxes/{name}.tmLanguage.json"
+              g = json.load(open(path))
+              for key in ("scopeName", "patterns", "repository"):
+                  if key not in g:
+                      print(f"{path}: missing {key}"); bad = True
+              if g.get("scopeName") != scope:
+                  print(f"{path}: scopeName is {g.get('scopeName')!r}, want {scope!r}"); bad = True
+              if g.get("fileTypes") != [name]:
+                  print(f"{path}: fileTypes is {g.get('fileTypes')!r}, want {[name]!r}"); bad = True
+          sys.exit(1 if bad else 0)
+          PY
